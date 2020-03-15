@@ -222,7 +222,7 @@ public class FlutterWebViewChromeClient extends WebChromeClient
 
     Uri uri = FileProvider.getUriForFile(
             registrar.activity(),
-            this.ApplicationContext.PackageName + ".fileprovider",
+            getApplicationContext().getPackageName() + ".fileprovider",
             photoFile);
     Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
     cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
