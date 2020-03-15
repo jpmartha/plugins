@@ -23,9 +23,19 @@ import android.webkit.WebView;
 import androidx.annotation.Nullable;
 import io.flutter.plugin.common.PluginRegistry;
 
+import android.provider.MediaStore;
+import java.io.File;
+import android.os.Environment;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.io.IOException;
+import androidx.core.content.FileProvider;
+
 public class FlutterWebViewChromeClient extends WebChromeClient
     implements PluginRegistry.ActivityResultListener {
   private static final int REQUEST_CODE_FILE_CHOOSER = 0x12;
+
+  private String currentPhotoPath;
 
   private ValueCallback<Uri[]> filePathCallback;
 
@@ -185,10 +195,45 @@ public class FlutterWebViewChromeClient extends WebChromeClient
   public boolean onShowFileChooser(
       WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
     this.filePathCallback = filePathCallback;
+    // Gallary
     Intent intent = fileChooserParams.createIntent();
     intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+    // Camera
+    File photoFile = null;
+
+    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+    String imageFileName = "JPEG_" + timeStamp + "_";
+    File storageDir = registrar.activity().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
     try {
-      registrar.activity().startActivityForResult(intent, REQUEST_CODE_FILE_CHOOSER);
+      photoFile = File.createTempFile(
+              imageFileName,  /* prefix */
+              ".jpg",         /* suffix */
+              storageDir      /* directory */
+      );
+    } catch (IOException ex) {
+      ex.printStackTrace();
+      return false;
+    }
+
+    if (photoFile == null) {
+      return false;
+    }
+
+    Uri uri = FileProvider.getUriForFile(
+            registrar.activity(),
+            this.ApplicationContext.PackageName + ".fileprovider",
+            photoFile);
+    Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+    currentPhotoPath = uri.toString();
+
+    // Chooser
+    Intent chooserIntent = Intent.createChooser(intent, "Picture...");
+    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{cameraIntent});
+
+    try {
+      registrar.activity().startActivityForResult(chooserIntent, REQUEST_CODE_FILE_CHOOSER);
     } catch (ActivityNotFoundException e) {
       e.printStackTrace();
       return false;
@@ -201,6 +246,27 @@ public class FlutterWebViewChromeClient extends WebChromeClient
   public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
     if (requestCode == REQUEST_CODE_FILE_CHOOSER
         && (resultCode == RESULT_OK || resultCode == RESULT_CANCELED)) {
+
+      Uri[] results = null;
+
+      if (data == null) {
+        if (currentPhotoPath != null) {
+          results = new Uri[]{Uri.parse(currentPhotoPath)};
+          filePathCallback.onReceiveValue(results);
+          return false;
+        }
+      } else {
+        String dataString = data.getDataString();
+        if (dataString != null) {
+          results = new Uri[]{Uri.parse(dataString)};
+        } else if (currentPhotoPath != null) {
+          // For Android8
+          results = new Uri[]{Uri.parse(currentPhotoPath)};
+        }
+        filePathCallback.onReceiveValue(results);
+        return false;
+      }
+
       filePathCallback.onReceiveValue(
           WebChromeClient.FileChooserParams.parseResult(resultCode, data));
     }
