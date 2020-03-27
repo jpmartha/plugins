@@ -53,6 +53,10 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     platformThreadHandler = new Handler(wrappedContext.getMainLooper());
     // Allow local storage.
     webView.getSettings().setDomStorageEnabled(true);
+    // Allow zoom.
+    webView.getSettings().setBuiltInZoomControls(true);
+    // Hide buttons.
+    webView.getSettings().setDisplayZoomControls(false);
     // choose file
     webView.getSettings().setAllowFileAccess(true);
     final FlutterWebViewChromeClient webViewChromeClient =
