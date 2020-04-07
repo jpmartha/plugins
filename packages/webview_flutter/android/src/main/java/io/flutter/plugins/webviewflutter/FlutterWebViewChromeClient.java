@@ -194,6 +194,10 @@ public class FlutterWebViewChromeClient extends WebChromeClient
   @Override
   public boolean onShowFileChooser(
       WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+    // Fix crash when filePathCallback is null
+    if (this.filePathCallback != null) {
+      this.filePathCallback.onReceiveValue(null);
+    }
     this.filePathCallback = filePathCallback;
     // Gallary
     Intent intent = fileChooserParams.createIntent();
@@ -244,6 +248,11 @@ public class FlutterWebViewChromeClient extends WebChromeClient
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   @Override
   public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+    // Fix crash when filePathCallback is null
+    if (requestCode != REQUEST_CODE_FILE_CHOOSER || filePathCallback == null) {
+      return false;
+    }
+
     if (requestCode == REQUEST_CODE_FILE_CHOOSER
         && (resultCode == RESULT_OK || resultCode == RESULT_CANCELED)) {
 
@@ -253,6 +262,8 @@ public class FlutterWebViewChromeClient extends WebChromeClient
         if (currentPhotoPath != null) {
           results = new Uri[]{Uri.parse(currentPhotoPath)};
           filePathCallback.onReceiveValue(results);
+          // Fix crash when showFileChooser result was already called
+          filePathCallback = null;
           return false;
         }
       } else {
@@ -264,11 +275,15 @@ public class FlutterWebViewChromeClient extends WebChromeClient
           results = new Uri[]{Uri.parse(currentPhotoPath)};
         }
         filePathCallback.onReceiveValue(results);
+        // Fix crash when showFileChooser result was already called
+        filePathCallback = null;
         return false;
       }
 
       filePathCallback.onReceiveValue(
           WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+      // Fix crash when showFileChooser result was already called
+      filePathCallback = null;
     }
     return false;
   }
