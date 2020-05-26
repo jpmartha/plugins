@@ -60,6 +60,9 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     webView.getSettings().setDisplayZoomControls(false);
     // choose file
     webView.getSettings().setAllowFileAccess(true);
+    // show image
+    webView.getSettings().setLoadWithOverviewMode(true);
+    webView.getSettings().setUseWideViewPort(true);
     final FlutterWebViewChromeClient webViewChromeClient =
         new FlutterWebViewChromeClient(registrar);
     webView.setWebChromeClient(webViewChromeClient);
