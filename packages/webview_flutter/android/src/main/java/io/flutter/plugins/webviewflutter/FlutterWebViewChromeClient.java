@@ -233,7 +233,7 @@ public class FlutterWebViewChromeClient extends WebChromeClient
     currentPhotoPath = uri.toString();
 
     // Chooser
-    Intent chooserIntent = Intent.createChooser(intent, "Picture...");
+    Intent chooserIntent = Intent.createChooser(intent, "画像をアップロードする");
     chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{cameraIntent});
 
     try {
